@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Button, ProgressBar, TimerItem, TimerModal, formatTime } from "./components";
+import {
+  Button,
+  ProgressBar,
+  TimerItem,
+  TimerModal,
+  formatTime,
+} from "./components";
 import { X, Play, Pause, Edit, Trash, RotateCcw } from "lucide-react";
 
 const TimerApp = () => {
@@ -7,20 +13,34 @@ const TimerApp = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTimer, setEditingTimer] = useState(null);
   const [snackbar, setSnackbar] = useState(null);
-  const audioRef = useRef(new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"));
-  const snackbarIntervalRef = useRef(null);
+  const audioRef = useRef(
+    new Audio(
+      "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+    )
+  );
 
-  // Load timers from localStorage on initial mount
+  // Load timers from localStorage
   useEffect(() => {
-    const savedTimers = localStorage.getItem("timers");
-    if (savedTimers) {
-      setTimers(JSON.parse(savedTimers));
+    try {
+      const savedTimers = localStorage.getItem("timers");
+      if (savedTimers) {
+        const parsedTimers = JSON.parse(savedTimers);
+        if (Array.isArray(parsedTimers)) {
+          setTimers(parsedTimers);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load timers from localStorage:", error);
     }
   }, []);
 
-  // Save timers to localStorage whenever they change
+  // Save timers to localStorage
   useEffect(() => {
-    localStorage.setItem("timers", JSON.stringify(timers));
+    try {
+      localStorage.setItem("timers", JSON.stringify(timers));
+    } catch (error) {
+      console.error("Failed to save timers to localStorage:", error);
+    }
   }, [timers]);
 
   // Timer update interval
@@ -28,14 +48,13 @@ const TimerApp = () => {
     const interval = setInterval(() => {
       setTimers((prevTimers) =>
         prevTimers.map((timer) => {
-          if (!timer.isRunning) return timer;
+          if (!timer.isRunning || timer.remainingTime <= 0) return timer;
 
           const newRemainingTime = Math.max(0, timer.remainingTime - 1);
 
-          if (newRemainingTime === 0 && timer.remainingTime !== 0) {
+          if (newRemainingTime === 0) {
             showSnackbar(`Timer "${timer.title}" has ended!`, timer.id);
           }
-          
 
           return {
             ...timer,
@@ -52,46 +71,33 @@ const TimerApp = () => {
   // Snackbar and audio notification management
   useEffect(() => {
     if (snackbar) {
-      audioRef.current.play().catch(error => {
+      // Set audio to loop
+      audioRef.current.loop = true;
+      audioRef.current.play().catch((error) => {
         console.error("Audio playback failed:", error);
       });
-      
-      snackbarIntervalRef.current = setInterval(() => {
-        audioRef.current.play().catch(error => {
-          console.error("Audio replay failed:", error);
-        });
-      }, 3000);
+
+      // Automatically dismiss the snackbar after 5 seconds
+      const timeout = setTimeout(() => {
+        handleSnackbarDismiss();
+      }, 5000);
+
+      return () => {
+        clearTimeout(timeout);
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current.loop = false; // Reset loop
+      };
     }
-
-    return () => {
-      if (snackbarIntervalRef.current) {
-        clearInterval(snackbarIntervalRef.current);
-      }
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    };
   }, [snackbar]);
-
 
   const showSnackbar = (message, timerId) => {
     setSnackbar({ message, timerId });
   };
 
   const handleSnackbarDismiss = () => {
-    if (snackbarIntervalRef.current) {
-      clearInterval(snackbarIntervalRef.current);
-      snackbarIntervalRef.current = null;
-    }
-  
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-  
     setSnackbar(null);
   };
-  
-  
 
   const handleAddOrUpdateTimer = (timerData) => {
     if (timerData.id) {
@@ -128,19 +134,11 @@ const TimerApp = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingTimer(null);
+  };
 
-    
-    // Add audio cleanup when closing modal
-    if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-      
-      // Clear any active snackbar intervals
-      if (snackbarIntervalRef.current) {
-        clearInterval(snackbarIntervalRef.current);
-        snackbarIntervalRef.current = null;
-      }
+  const resetAllTimers = () => {
+    setTimers([]);
+    localStorage.removeItem("timers");
   };
 
   return (
@@ -169,16 +167,12 @@ const TimerApp = () => {
               onDelete={() => {
                 setTimers((prev) => {
                   const newTimers = prev.filter((t) => t.id !== timer.id);
-                  
-                  // Check if the deleted timer matches the snackbar's timer ID
                   if (snackbar?.timerId === timer.id) {
                     handleSnackbarDismiss();
                   }
-                  
                   return newTimers;
                 });
               }}
-              
               onToggle={() => {
                 setTimers((prev) =>
                   prev.map((t) =>
@@ -210,7 +204,9 @@ const TimerApp = () => {
       {snackbar && (
         <div
           className={`fixed ${
-            window.innerWidth > 768 ? "top-4 right-4" : "bottom-4 left-4 right-4"
+            window.innerWidth > 768
+              ? "top-4 right-4"
+              : "bottom-4 left-4 right-4"
           } bg-gray-800 text-white px-4 py-2 rounded-lg flex items-center justify-between min-w-[200px] z-50 shadow-lg`}
         >
           <span>{snackbar.message}</span>

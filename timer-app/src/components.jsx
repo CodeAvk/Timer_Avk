@@ -38,7 +38,14 @@ const Button = ({
 // Progress Bar Component
 const ProgressBar = ({ progress }) => {
   return (
-    <div className="w-full bg-gray-200 rounded-full h-1">
+    <div
+      role="progressbar"
+      aria-valuenow={progress}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      className="w-full bg-gray-200 rounded-full h-1"
+      data-testid="progressbar"
+    >
       <div
         className="h-full bg-blue-500 rounded-full transition-all duration-1000"
         style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}

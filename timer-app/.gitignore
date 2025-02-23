@@ -1,0 +1,10 @@
+# Node.js / React
+node_modules/
+.env
+build/
+dist/
+.DS_Store
+.vscode/
+npm-debug.log*
+yarn-error.log*
+*.lock

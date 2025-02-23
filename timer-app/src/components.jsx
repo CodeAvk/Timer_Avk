@@ -5,16 +5,24 @@ import { X, Play, Pause, Edit, Trash, RotateCcw } from "lucide-react";
 const formatTime = (timeInSeconds) => {
   const minutes = Math.floor(timeInSeconds / 60);
   const seconds = timeInSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+    2,
+    "0"
+  )}`;
 };
 
 // Reusable Button Component
-const Button = ({ variant = 'primary', children, className = '', ...props }) => {
+const Button = ({
+  variant = "primary",
+  children,
+  className = "",
+  ...props
+}) => {
   const baseStyles = "rounded-lg transition-colors";
   const variants = {
     primary: "bg-blue-500 text-white hover:bg-blue-600 disabled:bg-blue-300",
     secondary: "bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50",
-    danger: "bg-red-500 text-white hover:bg-red-600 disabled:bg-red-300"
+    danger: "bg-red-500 text-white hover:bg-red-600 disabled:bg-red-300",
   };
 
   return (
@@ -41,7 +49,8 @@ const ProgressBar = ({ progress }) => {
 
 // Timer Item Component
 const TimerItem = ({ timer, onEdit, onDelete, onToggle, onReset }) => {
-  const progress = ((timer.duration - timer.remainingTime) / timer.duration) * 100;
+  const progress =
+    ((timer.duration - timer.remainingTime) / timer.duration) * 100;
   const isCompleted = timer.remainingTime === 0;
 
   return (
@@ -67,13 +76,14 @@ const TimerItem = ({ timer, onEdit, onDelete, onToggle, onReset }) => {
       </div>
 
       <div className="text-3xl font-mono text-center mb-4">
-  {timer.remainingTime === 0 ? (
-    <span className="text-red-500 font-semibold">{timer.title} has ended!</span>
-  ) : (
-    formatTime(timer.remainingTime)
-  )}
-</div>
-
+        {timer.remainingTime === 0 ? (
+          <span className="text-red-500 font-semibold">
+            {timer.title} has ended!
+          </span>
+        ) : (
+          formatTime(timer.remainingTime)
+        )}
+      </div>
 
       <div className="space-y-4">
         <ProgressBar progress={progress} />
@@ -108,6 +118,7 @@ const TimerModal = ({ isOpen, onClose, onSubmit, editTimer = null }) => {
   const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [errors, setErrors] = useState({});
+  const [showValidationError, setShowValidationError] = useState(false);
 
   useEffect(() => {
     if (editTimer) {
@@ -129,6 +140,7 @@ const TimerModal = ({ isOpen, onClose, onSubmit, editTimer = null }) => {
     setMinutes(0);
     setSeconds(0);
     setErrors({});
+    setShowValidationError(false);
   };
 
   const validateForm = () => {
@@ -142,7 +154,10 @@ const TimerModal = ({ isOpen, onClose, onSubmit, editTimer = null }) => {
   };
 
   const handleSubmit = () => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      setShowValidationError(true); // Show validation error snack bar
+      return;
+    }
 
     const duration = hours * 3600 + minutes * 60 + seconds;
     onSubmit({
@@ -210,7 +225,9 @@ const TimerModal = ({ isOpen, onClose, onSubmit, editTimer = null }) => {
                   }`}
                   value={hours}
                   onChange={(e) =>
-                    setHours(Math.min(23, Math.max(0, parseInt(e.target.value) || 0)))
+                    setHours(
+                      Math.min(23, Math.max(0, parseInt(e.target.value) || 0))
+                    )
                   }
                 />
               </div>
@@ -225,7 +242,9 @@ const TimerModal = ({ isOpen, onClose, onSubmit, editTimer = null }) => {
                   }`}
                   value={minutes}
                   onChange={(e) =>
-                    setMinutes(Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))
+                    setMinutes(
+                      Math.min(59, Math.max(0, parseInt(e.target.value) || 0))
+                    )
                   }
                 />
               </div>
@@ -240,7 +259,9 @@ const TimerModal = ({ isOpen, onClose, onSubmit, editTimer = null }) => {
                   }`}
                   value={seconds}
                   onChange={(e) =>
-                    setSeconds(Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))
+                    setSeconds(
+                      Math.min(59, Math.max(0, parseInt(e.target.value) || 0))
+                    )
                   }
                 />
               </div>
@@ -260,6 +281,19 @@ const TimerModal = ({ isOpen, onClose, onSubmit, editTimer = null }) => {
           </Button>
         </div>
       </div>
+
+      {/* Validation Error Snack Bar */}
+      {showValidationError && (
+        <div className="fixed bottom-4 left-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg flex items-center justify-between min-w-[200px] z-50 shadow-lg">
+          <span>Please fix the errors in the form.</span>
+          <button
+            onClick={() => setShowValidationError(false)}
+            className="ml-4 hover:text-gray-300 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
